@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
@@ -11,7 +13,7 @@ app.use(express.json());
 
 
 
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.4hywmoi.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -52,7 +54,7 @@ async function run() {
 
 
         // bookings
-        app.get('/bookings', async (req, res) => {
+        app.get('/bookings', async(req, res) => {
           let query = {};
           if(req.query?.email){
             query = {email: req.query.email}
@@ -69,6 +71,22 @@ async function run() {
           const result = await bookingCollection.insertOne(booking);
           res.send(result);
         });
+
+
+        app.patch('/bookings/:id', async(req, res) => {
+          const id = req.params.id;
+          const filter = {_id: new ObjectId(id)}
+          const updateBooking = req.body;
+          console.log(updateBooking)
+          const updateDoc = {
+            $set: {
+              status: updateBooking.status
+            },
+          };
+          
+          const result = await bookingCollection.updateOne(filter, updateDoc);
+          res.send(result);
+        })
 
 
         app.delete('/bookings/:id', async(req, res) => {
