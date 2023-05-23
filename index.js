@@ -36,7 +36,7 @@ const verifyJWT = (req, res, next) => {
   const token = authorization.split(' ')[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
     if(error){
-      return res.send({error: true, message: 'unauthorize access'})
+      return res.status(401).send({error: true, message: 'unauthorize access'})
       
     }
     req.decoded = decoded;
@@ -57,8 +57,7 @@ async function run() {
       const user = req.body;
       console.log(user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: '1h'
-      });
+        expiresIn: '2h' });
 
       console.log(token)
       res.send({token});
@@ -67,7 +66,11 @@ async function run() {
 
     // service route
     app.get('/services', async (req, res) => {
-            const cursor = serviceCollection.find();
+            const query = {};
+            const options = {
+              sort: {"price": -1}
+            }
+            const cursor = serviceCollection.find(query, options);
             const result = await cursor.toArray();
             res.send(result);
         })
@@ -88,7 +91,13 @@ async function run() {
 
         // bookings
         app.get('/bookings', verifyJWT, async(req, res) => {
-          // console.log(req.headers.authorization);
+
+          const decoded = req.decoded;
+          console.log('came back after verify', decoded)
+
+          if(decoded.email !== req.query.email){
+            return res.status(403).send({error: 1, message: 'forbidden access'})
+          }
 
           let query = {};
           if(req.query?.email){
